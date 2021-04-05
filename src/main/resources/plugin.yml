@@ -1,0 +1,12 @@
+name: Battle
+main: net.punchtree.battle.Battle
+version: 0.0
+api-version: 1.16
+author: Cxom
+description: Battle minigame
+depend: [PunchTree-Minigames, MovementPlusPlus]
+
+commands:
+    battle:
+        usage: /battle [leave|join <game>]
+        description: For the Battle minigame.
