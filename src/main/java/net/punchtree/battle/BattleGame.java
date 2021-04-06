@@ -87,10 +87,10 @@ public class BattleGame implements PvpGame {
 	
 	private void initializeGoals() {
 		goals.addAll(team1.getGoalSpecifications().stream().map(spec -> {
-				return new BattleGoal(spec.center, spec.radius, team1, this::onCaptureGoal);
+				return new BattleGoal(spec.center, spec.radius, team2, this);
 			}).collect(Collectors.toSet()));
 		goals.addAll(team2.getGoalSpecifications().stream().map(spec -> {
-			return new BattleGoal(spec.center, spec.radius, team2, this::onCaptureGoal);
+			return new BattleGoal(spec.center, spec.radius, team1, this);
 		}).collect(Collectors.toSet()));
 	}
 	
@@ -315,8 +315,22 @@ public class BattleGame implements PvpGame {
 		BattlePlayer bp = team1.getPlayer(uniqueId);
 		return bp != null ? bp : team2.getPlayer(uniqueId);
 	}
-
-	private void onCaptureGoal(BattleGoal capturedGoal) {
+	
+	public boolean canCapture(BattleTeam team) {
+		return whoseWave == null || whoseWave == team;
+	}
+	
+	public void onStartCapturing(BattleGoal goal, BattlePlayer capturer) {
+		BattleTeam team = goal.getTeam();
+		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal capturing started!");
+	}
+	
+	public void onStopCapturing(BattleGoal goal) {
+		BattleTeam team = goal.getTeam();
+		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal capturing stopped!");
+	}
+	
+	public void onCaptureGoal(BattleGoal capturedGoal) {
 		BattleTeam team = capturedGoal.getTeam();
 		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal captured!");
 	}

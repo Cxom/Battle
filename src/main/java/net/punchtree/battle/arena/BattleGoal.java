@@ -1,36 +1,37 @@
 package net.punchtree.battle.arena;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
+import net.punchtree.battle.BattleGame;
 import net.punchtree.battle.BattlePlayer;
 import net.punchtree.battle.BattleTeam;
 
 public class BattleGoal {
 	
-	private final BattleTeam team;
+	private final BattleTeam capturingTeam;
 	private final Location center;
 	private final double radius;
 	
-	private final Set<BattlePlayer> teammatesOnGoal = new HashSet<>();
-	private final Set<BattlePlayer> enemiesOnGoal = new HashSet<>();
+	private final Set<BattlePlayer> attackersOnGoal = new LinkedHashSet<>();
+	private final Set<BattlePlayer> defendersOnGoal = new LinkedHashSet<>();
 	
-	private final Consumer<BattleGoal> onCapture;
+	private final BattleGame game;
 	
 //	private final GoalAnimation goalAnimation;
 	
 	private static final float PROGRESS_PER_TICK = .01f;
 	private float progress = 0;
 	
-	public BattleGoal(Location center, double radius, BattleTeam team, Consumer<BattleGoal> onCapture) {
+	public BattleGoal(Location center, double radius, BattleTeam capturingTeam, BattleGame game) {
 		this.center = center;
 		this.radius = radius;
-		this.team = team;
-		this.onCapture = onCapture;
+		this.capturingTeam = capturingTeam;
+		this.game = game;
 		// TODO add color
 //		this.goalAnimation = new GoalAnimation();
 	}
@@ -40,25 +41,43 @@ public class BattleGoal {
 	}
 	
 	public void playerOnGoal(BattlePlayer bp) {
-		if (bp.getTeam().equals(team)) {
-			teammatesOnGoal.add(bp);
+		boolean wasCapturing = isCapturing();
+		if (bp.getTeam().equals(capturingTeam)) {
+			attackersOnGoal.add(bp);
 		} else {
-			enemiesOnGoal.add(bp);
+			defendersOnGoal.add(bp);
+		}
+		if (!wasCapturing && isCapturing()) {
+			game.onStartCapturing(this, attackersOnGoal.iterator().next());
+		} else if (wasCapturing && !isCapturing()) {
+			game.onStopCapturing(this);
 		}
 	}
 	
 	public void playerOffGoal(BattlePlayer bp) {
-		if (bp.getTeam().equals(team)) {
-			teammatesOnGoal.remove(bp);
+		boolean wasCapturing = isCapturing();
+		if (bp.getTeam().equals(capturingTeam)) {
+			attackersOnGoal.remove(bp);
 		} else {
-			enemiesOnGoal.remove(bp);
+			defendersOnGoal.remove(bp);
 		}
+		if (!wasCapturing && isCapturing()) {
+			game.onStartCapturing(this, attackersOnGoal.iterator().next());
+		} else if (wasCapturing && !isCapturing()) {
+			game.onStopCapturing(this);
+		}
+	}
+	
+	public boolean isCapturing() {
+		return game.canCapture(capturingTeam) 
+				&& attackersOnGoal.size() > 0 
+				&& defendersOnGoal.isEmpty();
 	}
 	
 	public void tickProgress() {
 		// Lets assume twice a second -> 50 seconds to capture
-		if (!teammatesOnGoal.isEmpty() && enemiesOnGoal.isEmpty()) {
-			float progressRate = teammatesOnGoal.size() *  PROGRESS_PER_TICK;
+		if (!attackersOnGoal.isEmpty() && defendersOnGoal.isEmpty()) {
+			float progressRate = attackersOnGoal.size() *  PROGRESS_PER_TICK;
 			setProgress(progress + progressRate);
 		}
 	}
@@ -68,21 +87,21 @@ public class BattleGoal {
 		progress = Math.min(1f, Math.max(0f, newProgress));
 		animateProgress(oldProgress, progress);
 		if (oldProgress != 1f && progress == 1f) {
-			onCapture.accept(this);
+			game.onCaptureGoal(this);
 		}
 	}
 	
 	private void animateProgress(float oldProgress, float newProgress) {
-		Bukkit.broadcastMessage(team.getChatColor() + "" + oldProgress + " -> " + newProgress);
+		Bukkit.broadcastMessage(capturingTeam.getChatColor() + "" + oldProgress + " -> " + newProgress);
 	}
 
 	public BattleTeam getTeam() {
-		return team;
+		return capturingTeam;
 	}
 
 	public void reset() {
-		teammatesOnGoal.clear();
-		enemiesOnGoal.clear();
+		attackersOnGoal.clear();
+		defendersOnGoal.clear();
 		progress = 0f;
 	}
 	
