@@ -186,6 +186,11 @@ public class BattleGame implements PvpGame {
 			movement.removePlayer(player);
 			PlayerProfile.restore(player);
 		}
+		for (BattlePlayer bp : team2.getPlayers()) {
+			Player player = bp.getPlayer();
+			movement.removePlayer(player);
+			PlayerProfile.restore(player);
+		}
 		
 		resetWave();
 		
@@ -249,6 +254,10 @@ public class BattleGame implements PvpGame {
 		return gamestate;
 	}
 	
+	public boolean hasPlayer(Player player) {
+		return hasPlayer(player.getUniqueId());
+	}
+	
 	public boolean hasPlayer(UUID uuid) {
 		return getPlayer(uuid) != null;
 	}
@@ -258,6 +267,14 @@ public class BattleGame implements PvpGame {
 		return bp != null ? bp : team2.getPlayer(uniqueId);
 	}
 
+	private onCaptureGoal(BattleGoal capturedGoal) {
+		
+	}
+	
+	// -------------------------- //
+	// ---- EVENT RESPONDERS ---- //
+	// -------------------------- //
+	
 	public void handleKill(Player killer, Player killed, EntityDamageByEntityEvent edbee) {
 		
 		if (getGameState() != GameState.RUNNING) return;
@@ -294,7 +311,7 @@ public class BattleGame implements PvpGame {
 		gui.playDeath(bpKilled, e, deathLocation);
 	}
 	
-	private void runPostgame(BattleTeam winner) {
+	private void runPostgameWithWinner(BattleTeam winner) {
 		gui.playPostgame(winner, BattleGame.POSTGAME_DURATION_SECONDS);
 		
 		setGameState(GameState.ENDING);
