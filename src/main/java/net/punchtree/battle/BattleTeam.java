@@ -10,6 +10,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 
 import net.punchtree.battle.arena.BattleArena.BattleArenaTeamBase;
+import net.punchtree.battle.arena.BattleArena.BattleGoalSpecification;
 import net.punchtree.minigames.utility.collections.CirculatingList;
 import net.punchtree.minigames.utility.color.MinigameColor;
 
@@ -66,6 +67,9 @@ public class BattleTeam {
 		return arenaTeamBase.spawns;
 	}
 	
+	public List<BattleGoalSpecification> getGoalSpecifications() {
+		return arenaTeamBase.goals;
+	}
 	
 	public Location getNextSpawn() {
 		return circulatingSpawns.next();

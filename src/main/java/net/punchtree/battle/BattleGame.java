@@ -2,11 +2,13 @@ package net.punchtree.battle;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -24,6 +26,7 @@ import com.trinoxtion.movement.MovementPlusPlus;
 import com.trinoxtion.movement.MovementSystem;
 
 import net.punchtree.battle.arena.BattleArena;
+import net.punchtree.battle.arena.BattleGoal;
 import net.punchtree.battle.gui.BattleGui;
 import net.punchtree.minigames.arena.Arena;
 import net.punchtree.minigames.game.GameState;
@@ -39,6 +42,7 @@ public class BattleGame implements PvpGame {
 	// class constants
 	private static final int POSTGAME_DURATION_SECONDS = 10;
 	private static final int WAVE_LENGTH_SECONDS = 15;
+	private static final int GOAL_TICK_RATE_TICKS = 10;
 	
 	// PErsistent properties
 	private final Lobby lobby;
@@ -49,6 +53,11 @@ public class BattleGame implements PvpGame {
 	CirculatingList<BattleTeam> teams;
 	private BattleTeam team1;
 	private BattleTeam team2;
+	private Set<BattleGoal> goals = new HashSet<>();
+	
+	// Listeners
+	private final BattleEventListeners eventListeners;
+	private final BattleGoalMovementListener goalMovementListener;
 	
 	// State fields
 	private GameState gamestate = GameState.WAITING;
@@ -57,19 +66,32 @@ public class BattleGame implements PvpGame {
 	private double waveTimer = 0;
 	private BukkitTask waveTask;
 	
+	private BukkitTask goalTicker;
 	
 	public BattleGame(BattleArena arena) {
 		this.arena = arena;
 		this.gui = new BattleGui(this);
 		this.lobby = new Lobby(this, this::startGame, Battle.BATTLE_CHAT_PREFIX);
 		
-		new BattleEventListeners(this);
-		
 		teams = new CirculatingList<>(arena.teamBases.stream().map(BattleTeam::new).collect(Collectors.toList()), false);
 
 		// Two teams. More than two => KISS
 		team1 = teams.next();
 		team2 = teams.next();
+
+		initializeGoals();
+		
+		eventListeners = new BattleEventListeners(this);
+		goalMovementListener = new BattleGoalMovementListener(this, goals);
+	}
+	
+	private void initializeGoals() {
+		goals.addAll(team1.getGoalSpecifications().stream().map(spec -> {
+				return new BattleGoal(spec.center, spec.radius, team1, this::onCaptureGoal);
+			}).collect(Collectors.toSet()));
+		goals.addAll(team2.getGoalSpecifications().stream().map(spec -> {
+			return new BattleGoal(spec.center, spec.radius, team2, this::onCaptureGoal);
+		}).collect(Collectors.toSet()));
 	}
 	
 	private void startGame(Set<Player> players) {
@@ -101,6 +123,7 @@ public class BattleGame implements PvpGame {
 		gui.playStart();
 		
 		startWaveTask();
+		startGoalTicker();
 	}
 	
 	private void startWaveTask() {
@@ -127,6 +150,15 @@ public class BattleGame implements PvpGame {
 
 	private void setGameState(GameState gamestate) {
 		this.gamestate = gamestate;
+	}
+	
+	private void startGoalTicker() {
+		goalTicker = new BukkitRunnable() {
+			@Override
+			public void run() {
+				goals.forEach(BattleGoal::tickProgress);
+			}
+		}.runTaskTimer(Battle.getPlugin(), 0, GOAL_TICK_RATE_TICKS);
 	}
 	
 	// TODO move and debrittle
@@ -168,6 +200,9 @@ public class BattleGame implements PvpGame {
 		player.teleport(bp.getTeam().getNextSpawn());
 	}
 	
+	/**
+	 * Used for *force* stopping a game (not regular game ending by a win)
+	 */
 	public void stopGame() {
 		gui.playStop();
 		
@@ -191,19 +226,32 @@ public class BattleGame implements PvpGame {
 			movement.removePlayer(player);
 			PlayerProfile.restore(player);
 		}
+		team1.getPlayers().clear();
+		team2.getPlayers().clear();
 		
 		resetWave();
+		resetGoals();
 		
 		this.setGameState(GameState.WAITING);
 		
 	}
 	
 	private void resetWave() {
-		this.whoseWave = null;
-		this.waveTimer = 0;
 		if (this.waveTask != null) {			
 			this.waveTask.cancel();
 			this.waveTask = null;
+		}
+		this.whoseWave = null;
+		this.waveTimer = 0;
+	}
+	
+	private void resetGoals() {
+		if (this.goalTicker != null) {			
+			this.goalTicker.cancel();
+			this.goalTicker = null;
+		}
+		for (BattleGoal goal : goals) {
+			goal.reset();
 		}
 	}
 	
@@ -212,6 +260,7 @@ public class BattleGame implements PvpGame {
 		
 		// TODO Removing logic
 		BattlePlayer bplayer = getPlayer(player.getUniqueId());
+		goalMovementListener.onDieOrLeave(bplayer, player.getLocation());
 		
 		// Restore stats and location
 		movement.removePlayer(player);
@@ -267,8 +316,9 @@ public class BattleGame implements PvpGame {
 		return bp != null ? bp : team2.getPlayer(uniqueId);
 	}
 
-	private onCaptureGoal(BattleGoal capturedGoal) {
-		
+	private void onCaptureGoal(BattleGoal capturedGoal) {
+		BattleTeam team = capturedGoal.getTeam();
+		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal captured!");
 	}
 	
 	// -------------------------- //
@@ -292,6 +342,7 @@ public class BattleGame implements PvpGame {
 		// cancel damage
 		edbee.setCancelled(true);
 		
+		goalMovementListener.onDieOrLeave(bpKilled, killLocation);
 		this.spawnPlayer(bpKilled);
 		
 		gui.playKill(bpKiller, bpKilled, edbee, killLocation);

@@ -51,7 +51,7 @@ public class BattleGoal {
 		if (bp.getTeam().equals(team)) {
 			teammatesOnGoal.remove(bp);
 		} else {
-			enemiesOnGoal.add(bp);
+			enemiesOnGoal.remove(bp);
 		}
 	}
 	
@@ -73,7 +73,17 @@ public class BattleGoal {
 	}
 	
 	private void animateProgress(float oldProgress, float newProgress) {
-		Bukkit.broadcastMessage(team.getChatColor() + "" + oldProgress + " → " + newProgress);
+		Bukkit.broadcastMessage(team.getChatColor() + "" + oldProgress + " -> " + newProgress);
+	}
+
+	public BattleTeam getTeam() {
+		return team;
+	}
+
+	public void reset() {
+		teammatesOnGoal.clear();
+		enemiesOnGoal.clear();
+		progress = 0f;
 	}
 	
 }
