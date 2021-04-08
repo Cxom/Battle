@@ -71,12 +71,13 @@ public class BattleGoal {
 	public boolean isCapturing() {
 		return game.canCapture(capturingTeam) 
 				&& attackersOnGoal.size() > 0 
-				&& defendersOnGoal.isEmpty();
+				&& defendersOnGoal.isEmpty()
+				&& !isCaptured();
 	}
 	
 	public void tickProgress() {
 		// Lets assume twice a second -> 50 seconds to capture
-		if (!attackersOnGoal.isEmpty() && defendersOnGoal.isEmpty()) {
+		if (isCapturing()) {
 			float progressRate = attackersOnGoal.size() *  PROGRESS_PER_TICK;
 			setProgress(progress + progressRate);
 		}
@@ -103,6 +104,10 @@ public class BattleGoal {
 		attackersOnGoal.clear();
 		defendersOnGoal.clear();
 		progress = 0f;
+	}
+
+	public boolean isCaptured() {
+		return progress == 1f;
 	}
 	
 }

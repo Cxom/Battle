@@ -53,7 +53,7 @@ public class BattleGame implements PvpGame {
 	CirculatingList<BattleTeam> teams;
 	private BattleTeam team1;
 	private BattleTeam team2;
-	private Set<BattleGoal> goals = new HashSet<>();
+	private Set<BattleGoal> allGoals = new HashSet<>();
 	
 	// Listeners
 	private final BattleEventListeners eventListeners;
@@ -82,16 +82,18 @@ public class BattleGame implements PvpGame {
 		initializeGoals();
 		
 		eventListeners = new BattleEventListeners(this);
-		goalMovementListener = new BattleGoalMovementListener(this, goals);
+		goalMovementListener = new BattleGoalMovementListener(this, allGoals);
 	}
 	
 	private void initializeGoals() {
-		goals.addAll(team1.getGoalSpecifications().stream().map(spec -> {
+		team2.goalsToCaptureToWin.addAll(team1.getGoalSpecifications().stream().map(spec -> {
 				return new BattleGoal(spec.center, spec.radius, team2, this);
 			}).collect(Collectors.toSet()));
-		goals.addAll(team2.getGoalSpecifications().stream().map(spec -> {
+		team1.goalsToCaptureToWin.addAll(team2.getGoalSpecifications().stream().map(spec -> {
 			return new BattleGoal(spec.center, spec.radius, team1, this);
 		}).collect(Collectors.toSet()));
+		allGoals.addAll(team1.goalsToCaptureToWin);
+		allGoals.addAll(team2.goalsToCaptureToWin);
 	}
 	
 	private void startGame(Set<Player> players) {
@@ -133,11 +135,14 @@ public class BattleGame implements PvpGame {
 			public void run() {
 				if ( whoseWave == null ) return;
 				
-				waveTimer -= .05;
-				if ( waveTimer <= 0 ) {
-					waveTimer = WAVE_LENGTH_SECONDS;
-					whoseWave = getNextWaveTeam();
+				if (!isTeamCapturing(whoseWave)) {					
+					waveTimer -= .05;
+					if ( waveTimer <= 0 ) {
+						waveTimer = WAVE_LENGTH_SECONDS;
+						setWhoseWave(getNextWaveTeam());
+					}
 				}
+				gui.playWaveTick(waveTimer);
 			}
 			
 			private BattleTeam getNextWaveTeam() {
@@ -146,6 +151,11 @@ public class BattleGame implements PvpGame {
 				return whoseWave == team1 ? team2 : team1;
 			}
 		}.runTaskTimer(Battle.getPlugin(), 0, 1);
+	}
+	
+	private void setWhoseWave(BattleTeam team) {
+		whoseWave = team;
+		gui.playWaveChange(team);
 	}
 
 	private void setGameState(GameState gamestate) {
@@ -156,9 +166,16 @@ public class BattleGame implements PvpGame {
 		goalTicker = new BukkitRunnable() {
 			@Override
 			public void run() {
-				goals.forEach(BattleGoal::tickProgress);
+				allGoals.forEach(BattleGoal::tickProgress);
 			}
 		}.runTaskTimer(Battle.getPlugin(), 0, GOAL_TICK_RATE_TICKS);
+	}
+	
+	private boolean isTeamCapturing(BattleTeam team) {
+		for (BattleGoal goal : team.goalsToCaptureToWin) {
+			if (goal.isCapturing()) return true;
+		}
+		return false;
 	}
 	
 	// TODO move and debrittle
@@ -250,7 +267,7 @@ public class BattleGame implements PvpGame {
 			this.goalTicker.cancel();
 			this.goalTicker = null;
 		}
-		for (BattleGoal goal : goals) {
+		for (BattleGoal goal : allGoals) {
 			goal.reset();
 		}
 	}
@@ -321,18 +338,33 @@ public class BattleGame implements PvpGame {
 	}
 	
 	public void onStartCapturing(BattleGoal goal, BattlePlayer capturer) {
-		BattleTeam team = goal.getTeam();
-		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal capturing started!");
+		BattleTeam capturingTeam = goal.getTeam();
+		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal capturing started!");
+		if (whoseWave == null) {
+			setWhoseWave(capturingTeam);
+		}
+		if (whoseWave == capturingTeam) {
+			waveTimer = WAVE_LENGTH_SECONDS;
+		}
 	}
 	
 	public void onStopCapturing(BattleGoal goal) {
-		BattleTeam team = goal.getTeam();
-		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal capturing stopped!");
+		BattleTeam capturingTeam = goal.getTeam();
+		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal capturing stopped!");
+	
 	}
 	
 	public void onCaptureGoal(BattleGoal capturedGoal) {
-		BattleTeam team = capturedGoal.getTeam();
-		Bukkit.broadcastMessage(team.getChatColor() + team.getName() + " goal captured!");
+		BattleTeam capturingTeam = capturedGoal.getTeam();
+		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal captured!");
+		if (teamHasWon(capturingTeam)) {
+			// Maybe name as end game?
+			runPostgameWithWinner(capturingTeam);
+		}
+	}
+	
+	private boolean teamHasWon(BattleTeam team) {
+		return team.goalsToCaptureToWin.stream().allMatch(BattleGoal::isCaptured);
 	}
 	
 	// -------------------------- //
@@ -378,6 +410,12 @@ public class BattleGame implements PvpGame {
 	
 	private void runPostgameWithWinner(BattleTeam winner) {
 		gui.playPostgame(winner, BattleGame.POSTGAME_DURATION_SECONDS);
+		
+		// Cancel the goal ticker here to prevent capturing in the postgame
+		if (this.goalTicker != null) {
+			this.goalTicker.cancel();
+			this.goalTicker = null;
+		}
 		
 		setGameState(GameState.ENDING);
 		

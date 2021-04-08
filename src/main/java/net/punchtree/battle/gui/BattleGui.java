@@ -108,5 +108,14 @@ public class BattleGui {
 	public void playPostgame(BattleTeam winner, int postgameDurationSeconds) {
 		Bukkit.broadcastMessage("gui::playPostgame ("  + winner.getName() + ")");
 	}
+
+	public void playWaveChange(BattleTeam team) {
+		Bukkit.broadcastMessage("gui::playWaveChange (" + team.getName() + ")");
+		bossbar.setWave(team);
+	}
+
+	public void playWaveTick(double waveTimerSeconds) {
+		bossbar.setSeconds(waveTimerSeconds);
+	}
 	
 }

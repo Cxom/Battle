@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 import net.punchtree.battle.arena.BattleGoal;
+import net.punchtree.minigames.game.GameState;
 
 public class BattleGoalMovementListener implements Listener {
 
@@ -24,6 +25,7 @@ public class BattleGoalMovementListener implements Listener {
 	
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event) {
+		if (game.getGameState() != GameState.RUNNING) return;
 		if (!game.hasPlayer(event.getPlayer())) return;
 		BattlePlayer bp = game.getPlayer(event.getPlayer().getUniqueId());
 		for (BattleGoal goal : allGoals) {
@@ -38,6 +40,7 @@ public class BattleGoalMovementListener implements Listener {
 	}
 	
 	public void onDieOrLeave(BattlePlayer dead, Location deathOrLeaveLocation) {
+		if (game.getGameState() != GameState.RUNNING) return;
 		for (BattleGoal goal : allGoals) {
 			if (goal.isOnGoal(deathOrLeaveLocation)) {
 				goal.playerOffGoal(dead);

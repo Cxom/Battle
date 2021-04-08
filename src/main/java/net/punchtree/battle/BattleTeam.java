@@ -2,8 +2,10 @@ package net.punchtree.battle;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
@@ -11,6 +13,7 @@ import org.bukkit.Location;
 
 import net.punchtree.battle.arena.BattleArena.BattleArenaTeamBase;
 import net.punchtree.battle.arena.BattleArena.BattleGoalSpecification;
+import net.punchtree.battle.arena.BattleGoal;
 import net.punchtree.minigames.utility.collections.CirculatingList;
 import net.punchtree.minigames.utility.color.MinigameColor;
 
@@ -24,6 +27,7 @@ public class BattleTeam {
 	private final CirculatingList<Location> circulatingSpawns;
 	
 	private Map<UUID, BattlePlayer> bplayers = new HashMap<>();
+	Set<BattleGoal> goalsToCaptureToWin = new HashSet<>();
 	
 	public BattleTeam(BattleArenaTeamBase arenaTeamBase) {
 		this.name = arenaTeamBase.name;
