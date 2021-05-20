@@ -1,39 +1,47 @@
 package net.punchtree.battle.arena;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 
 import net.punchtree.battle.BattleGame;
 import net.punchtree.battle.BattlePlayer;
 import net.punchtree.battle.BattleTeam;
+import net.punchtree.util.color.PunchTreeColor;
 
 public class BattleGoal {
 	
 	private final BattleTeam capturingTeam;
 	private final Location center;
 	private final double radius;
+	private final PunchTreeColor color;
 	
 	private final Set<BattlePlayer> attackersOnGoal = new LinkedHashSet<>();
 	private final Set<BattlePlayer> defendersOnGoal = new LinkedHashSet<>();
 	
 	private final BattleGame game;
 	
-//	private final GoalAnimation goalAnimation;
+	private final GoalAnimation goalAnimation;
 	
 	private static final float PROGRESS_PER_TICK = .01f;
 	private float progress = 0;
 	
-	public BattleGoal(Location center, double radius, BattleTeam capturingTeam, BattleGame game) {
+	public BattleGoal(Location center, double radius, PunchTreeColor color, BattleTeam capturingTeam, BattleGame game) {
 		this.center = center;
 		this.radius = radius;
+		this.color = color;
 		this.capturingTeam = capturingTeam;
 		this.game = game;
-		// TODO add color
-//		this.goalAnimation = new GoalAnimation();
+		// TODO add color ??
+		
+		this.goalAnimation = new GoalAnimation(center, (float) radius, color.getBukkitColor(), getSecondaryColor());
+	}
+	
+	private Color getSecondaryColor() {
+		java.awt.Color javaColor = color.brighter();
+		return Color.fromRGB(javaColor.getRed(), javaColor.getBlue(), javaColor.getGreen());
 	}
 	
 	public boolean isOnGoal(Location location) {
@@ -89,18 +97,29 @@ public class BattleGoal {
 		animateProgress(oldProgress, progress);
 		if (oldProgress != 1f && progress == 1f) {
 			game.onCaptureGoal(this);
+			goalAnimation.setCaptured(true);
 		}
 	}
 	
 	private void animateProgress(float oldProgress, float newProgress) {
-		Bukkit.broadcastMessage(capturingTeam.getChatColor() + "" + oldProgress + " -> " + newProgress);
+//		Bukkit.broadcastMessage(capturingTeam.getChatColor() + "" + oldProgress + " -> " + newProgress);
+		goalAnimation.setProgress(newProgress);
 	}
 
 	public BattleTeam getTeam() {
 		return capturingTeam;
 	}
 
+	public void startAnimation() {
+		goalAnimation.start();
+	}
+	
+	public void stopAnimation() {
+		goalAnimation.stop();
+	}
+	
 	public void reset() {
+		stopAnimation();
 		attackersOnGoal.clear();
 		defendersOnGoal.clear();
 		progress = 0f;
@@ -108,6 +127,14 @@ public class BattleGoal {
 
 	public boolean isCaptured() {
 		return progress == 1f;
+	}
+
+	public float getProgress() {
+		return progress;
+	}
+
+	public Location getLocation() {
+		return center;
 	}
 	
 }

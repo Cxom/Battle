@@ -15,19 +15,20 @@ import net.punchtree.battle.arena.BattleArena.BattleArenaTeamBase;
 import net.punchtree.battle.arena.BattleArena.BattleGoalSpecification;
 import net.punchtree.battle.arena.BattleGoal;
 import net.punchtree.minigames.utility.collections.CirculatingList;
-import net.punchtree.minigames.utility.color.MinigameColor;
+import net.punchtree.util.color.PunchTreeColor;
 
 public class BattleTeam {
 
 	private final String name;
-	private final MinigameColor color;
+	private final PunchTreeColor color;
 	
 	private final BattleArenaTeamBase arenaTeamBase;
 	
 	private final CirculatingList<Location> circulatingSpawns;
 	
 	private Map<UUID, BattlePlayer> bplayers = new HashMap<>();
-	Set<BattleGoal> goalsToCaptureToWin = new HashSet<>();
+	// TODO getter
+	public Set<BattleGoal> goalsToCaptureToWin = new HashSet<>();
 	
 	public BattleTeam(BattleArenaTeamBase arenaTeamBase) {
 		this.name = arenaTeamBase.name;
@@ -59,7 +60,7 @@ public class BattleTeam {
 		return name;
 	}
 	
-	public MinigameColor getColor(){
+	public PunchTreeColor getColor(){
 		return color;
 	}
 	

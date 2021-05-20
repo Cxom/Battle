@@ -14,7 +14,7 @@ import net.punchtree.battle.arena.BattleArena.BattleArenaTeamBase;
 import net.punchtree.battle.arena.BattleArena.BattleGoalSpecification;
 import net.punchtree.battle.arena.BattleArena.GoalSpecification;
 import net.punchtree.minigames.arena.creation.ArenaLoader;
-import net.punchtree.minigames.utility.color.MinigameColor;
+import net.punchtree.util.color.PunchTreeColor;
 
 public class BattleArenaLoader extends ArenaLoader {
 
@@ -44,12 +44,12 @@ public class BattleArenaLoader extends ArenaLoader {
 	
 	public static BattleArenaTeamBase getTeamBase(ConfigurationSection section) {
 		String name = section.getString("name");
-		MinigameColor color = getColor(section.getConfigurationSection("color"));
+		PunchTreeColor color = getColor(section.getConfigurationSection("color"));
 		if (name == null && color == null) return null;
 		if (name == null) {
 			name = StringUtils.capitalize(color.getChatColor().name());
 		} else if (color == null) {
-			color = MinigameColor.valueOf(name);
+			color = PunchTreeColor.valueOf(name);
 		}
 		
 		World world = getRootWorld(section);

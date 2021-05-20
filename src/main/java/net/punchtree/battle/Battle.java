@@ -23,7 +23,7 @@ public class Battle extends JavaPlugin {
 	public void onEnable() {
 		plugin = this;
 		
-		battleArenaFolder = new File(plugin.getDataFolder().getAbsoluteFile() + File.separator + "Arenas");
+		battleArenaFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "Arenas");
 		
 		BattleGameManager.createAllGames();
 	}

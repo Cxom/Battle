@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.bukkit.Location;
 
 import net.punchtree.minigames.arena.Arena;
-import net.punchtree.minigames.utility.color.MinigameColor;
+import net.punchtree.util.color.PunchTreeColor;
 
 public class BattleArena extends Arena {
 
@@ -37,11 +37,11 @@ public class BattleArena extends Arena {
 	
 	public static class BattleArenaTeamBase {
 		public final String name;
-		public final MinigameColor color;
+		public final PunchTreeColor color;
 		public final List<Location> spawns;
 		public final List<BattleGoalSpecification> goals;
 		
-		public BattleArenaTeamBase(String name, MinigameColor color, List<Location> spawns, List<BattleGoalSpecification> goals) {
+		public BattleArenaTeamBase(String name, PunchTreeColor color, List<Location> spawns, List<BattleGoalSpecification> goals) {
 			this.name = name;
 			this.spawns = spawns;
 			this.goals = goals;

@@ -13,6 +13,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -87,10 +88,10 @@ public class BattleGame implements PvpGame {
 	
 	private void initializeGoals() {
 		team2.goalsToCaptureToWin.addAll(team1.getGoalSpecifications().stream().map(spec -> {
-				return new BattleGoal(spec.center, spec.radius, team2, this);
+				return new BattleGoal(spec.center, spec.radius, team1.getColor(), team2, this);
 			}).collect(Collectors.toSet()));
 		team1.goalsToCaptureToWin.addAll(team2.getGoalSpecifications().stream().map(spec -> {
-			return new BattleGoal(spec.center, spec.radius, team1, this);
+			return new BattleGoal(spec.center, spec.radius, team2.getColor(), team1, this);
 		}).collect(Collectors.toSet()));
 		allGoals.addAll(team1.goalsToCaptureToWin);
 		allGoals.addAll(team2.goalsToCaptureToWin);
@@ -124,6 +125,8 @@ public class BattleGame implements PvpGame {
 		
 		gui.playStart();
 		
+		allGoals.forEach(BattleGoal::startAnimation);
+		
 		startWaveTask();
 		startGoalTicker();
 	}
@@ -142,7 +145,7 @@ public class BattleGame implements PvpGame {
 						setWhoseWave(getNextWaveTeam());
 					}
 				}
-				gui.playWaveTick(waveTimer);
+				gui.playWaveTick(whoseWave, waveTimer);
 			}
 			
 			private BattleTeam getNextWaveTeam() {
@@ -350,13 +353,14 @@ public class BattleGame implements PvpGame {
 	
 	public void onStopCapturing(BattleGoal goal) {
 		BattleTeam capturingTeam = goal.getTeam();
-		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal capturing stopped!");
+//		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal capturing stopped!");
 	
 	}
 	
 	public void onCaptureGoal(BattleGoal capturedGoal) {
 		BattleTeam capturingTeam = capturedGoal.getTeam();
-		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal captured!");
+//		Bukkit.broadcastMessage(capturingTeam.getChatColor() + capturingTeam.getName() + " goal captured!");
+		capturedGoal.getLocation().getWorld().playSound(capturedGoal.getLocation(), Sound.BLOCK_END_PORTAL_SPAWN, 2, 1);
 		if (teamHasWon(capturingTeam)) {
 			// Maybe name as end game?
 			runPostgameWithWinner(capturingTeam);

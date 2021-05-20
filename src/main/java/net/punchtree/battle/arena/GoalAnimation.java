@@ -1,40 +1,62 @@
 package net.punchtree.battle.arena;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Particle.DustOptions;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import net.md_5.bungee.api.ChatColor;
 import net.punchtree.battle.Battle;
+import net.punchtree.util.color.PunchTreeColor;
 
-public class GoalAnimation { /*extends BukkitRunnable implements Listener {
+public class GoalAnimation extends BukkitRunnable implements Listener {
 
 //	private final Location LOCATION = new Location(Bukkit.getWorld("GTA_City"), 2309, 71, 745);
 	
 	private final Location center;
-	private final double radius;
+	private final float radius;
+	
+	private Color PRIMARY_COL = PunchTreeColor.DARK_GRAY.getBukkitColor();
+	private Color SECONDARY_COL = PunchTreeColor.GRAY.getBukkitColor();
+	
+	private BukkitTask gaTask;
+	private boolean captured = false;
 	
 	private boolean ringEnabled = true;
 	private boolean cylEnabled = true;
 	private boolean cinEnabled = true;
 	private boolean riseEnabled = false;
 	
-	private boolean onGoal = false;
-	private int progress = 0;
-	private final int PROGRESS_MAX = 100;
+//	private boolean onGoal = false;
+	private float progress = 0f;
+	private final float PROGRESS_MAX = 1f;
+	
+	private final int RING_RATE = 1;
+//	private final float RING_RADIUS = 2.5f;
+	private int RING_RADIUS_STEPS;
+	private final double RING_STEP = (2 * Math.PI) / RING_RADIUS_STEPS;
+	private final int RING_PARTICLES_PER_TICK = 1;
+	private double RING_d = 0;
+	private float RING_RADIUS_SQ;
 	
 	private final float linearUnitProgress() {
 		return (float) progress / PROGRESS_MAX;
+	}
+	
+	public GoalAnimation(Location center, float radius, Color primaryColor, Color secondaryColor) {
+		this.center = center;
+		this.radius = radius;
+		
+		this.PRIMARY_COL = primaryColor;
+		this.SECONDARY_COL = secondaryColor;
+		
+//		RING_RADIUS_STEPS = (int) (2 * radius * 14);
+		RING_RADIUS_STEPS = (int) (2 * radius * 7);
+		RING_RADIUS_SQ = radius * radius;
 	}
 	
 //	private static GoalAnimation ga;
@@ -43,15 +65,26 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 //		Bukkit.getPluginManager().registerEvents(ga, Battle.getPlugin());
 //	}
 	
-	private static BukkitTask gaTask;
-	public static void start() {
-		gaTask = ga.runTaskTimerAsynchronously(Battle.getPlugin(), 0, 1);
+	public void start() {
+		gaTask = runTaskTimerAsynchronously(Battle.getPlugin(), 0, 1);
 	}
 	
-	public static void stop() {
+	public void stop() {
 		if (gaTask == null) return;
 		gaTask.cancel();
 		gaTask = null;
+	}
+	
+	public void setCaptured(boolean captured) {
+		this.captured = captured;
+	}
+	
+//	public void setOnGoal(boolean onGoal) {
+//		this.onGoal = onGoal; 
+//	}
+	
+	public void setProgress(float progress) {
+		this.progress = progress;
 	}
 	
 	private int TASK_COUNTER = 0;
@@ -62,12 +95,11 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 		if (TASK_COUNTER % PIN_RATE == 0) drawCentralProgressIndicator();
 		drawRing();
 		TASK_COUNTER++;
-		if (onGoal) {
-			progress = Math.min(progress + 1, PROGRESS_MAX);
-		} else {
-			progress = Math.max(progress - 1, 0);
-		}
-		
+//		if (onGoal) {
+//			progress = Math.min(progress + 1, PROGRESS_MAX);
+//		} else {
+//			progress = Math.max(progress - 1, 0);
+//		}
 	}
 	
 //	@EventHandler
@@ -108,37 +140,28 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 	
 	
 	
-	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent e) {
-		if (isOnGoal(e.getTo()) && !isOnGoal(e.getFrom())) {
-			onGoal = true;
-			e.getTo().getWorld().playSound(e.getTo(), Sound.BLOCK_BEEHIVE_ENTER, 1, 1);
-		} else if (isOnGoal(e.getFrom()) && !isOnGoal(e.getTo())) {
-			e.getFrom().getWorld().playSound(e.getFrom(), Sound.BLOCK_BEEHIVE_EXIT, 1, 1);
-			onGoal = false;
-		}
-	}
+//	@EventHandler
+//	public void onPlayerMove(PlayerMoveEvent e) {
+//		if (isOnGoal(e.getTo()) && !isOnGoal(e.getFrom())) {
+//			onGoal = true;
+//			e.getTo().getWorld().playSound(e.getTo(), Sound.BLOCK_BEEHIVE_ENTER, 1, 1);
+//		} else if (isOnGoal(e.getFrom()) && !isOnGoal(e.getTo())) {
+//			e.getFrom().getWorld().playSound(e.getFrom(), Sound.BLOCK_BEEHIVE_EXIT, 1, 1);
+//			onGoal = false;
+//		}
+//	}
 	
 //	private boolean isOnGoal(Location location) {
 //		return location.getWorld() == LOCATION.getWorld() && location.distanceSquared(LOCATION) <= RING_RADIUS_SQ;
 //	}
 	
-	private final Color PRIMARY_COL = Color.BLUE;
-	private final Color SECONDARY_COL = Color.AQUA;
-	
 	// To be called every second
-	private final int RING_RATE = 1;
-	private final float RING_RADIUS = 2.5f;
-	private final int RING_RADIUS_STEPS = (int) (2 * RING_RADIUS * 14);
-	private final double RING_STEP = (2 * Math.PI) / RING_RADIUS_STEPS;
-	private final int RING_PARTICLES_PER_TICK = 1;
-	private double RING_d = 0;
-	private final float RING_RADIUS_SQ = RING_RADIUS * RING_RADIUS;
+
 	private void drawRingStep() {
-		Location particleSpawnLocation = LOCATION.clone();
-		Location particleSpawnLocation2 = LOCATION.clone();
-		double xAdd = Math.sin(RING_d) * RING_RADIUS;
-		double zAdd = Math.cos(RING_d) * RING_RADIUS;
+		Location particleSpawnLocation = center.clone();
+		Location particleSpawnLocation2 = center.clone();
+		double xAdd = Math.sin(RING_d) * radius;
+		double zAdd = Math.cos(RING_d) * radius;
 		particleSpawnLocation.add(xAdd, 0, zAdd);
 		particleSpawnLocation2.add(-xAdd, 0, -zAdd);
 		spawnRedstoneParticle(particleSpawnLocation, 1.1f, PRIMARY_COL);
@@ -147,8 +170,8 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 		spawnRedstoneParticle(particleSpawnLocation2, 1.1f, PRIMARY_COL);
 		RING_d += RING_STEP;
 		
-		float randX = (float) (Math.random() * RING_RADIUS * 2) - RING_RADIUS;
-		float randZ = (float) (Math.random() * RING_RADIUS * 2) - RING_RADIUS;
+		float randX = (float) (Math.random() * radius * 2) - radius;
+		float randZ = (float) (Math.random() * radius * 2) - radius;
 //		if (randX*randX + randZ*randZ < RING_RADIUS_SQ) {
 //			particleSpawnLocation = LOCATION.clone();
 //			xAdd = randX;
@@ -156,10 +179,10 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 //			particleSpawnLocation.add(xAdd, 0.1, zAdd);
 //			spawnParticle(particleSpawnLocation, .5f, SECONDARY_COL.mixColors(Color.WHITE));
 //		}
-		randX = (float) (Math.random() * RING_RADIUS * 2) - RING_RADIUS;
-		randZ = (float) (Math.random() * RING_RADIUS * 2) - RING_RADIUS;
+		randX = (float) (Math.random() * radius * 2) - radius;
+		randZ = (float) (Math.random() * radius * 2) - radius;
 		if (randX*randX + randZ*randZ < RING_RADIUS_SQ) {
-			particleSpawnLocation = LOCATION.clone();
+			particleSpawnLocation = center.clone();
 			xAdd = randX;
 			zAdd = randZ;
 			particleSpawnLocation.add(xAdd, 0, zAdd);
@@ -177,10 +200,12 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 	
 	private final int TCYL_RATE = 1;
 	private final float TCYL_RADIUS = .4f;
-	private final int TCYL_RADIUS_STEPS = 9;
+//	private final int TCYL_RADIUS_STEPS = 9;
+	private final int TCYL_RADIUS_STEPS = 5;
 	private final float TCYL_STEP = (float) (2 * Math.PI) / TCYL_RADIUS_STEPS;
 	private final float TCYL_HEIGHT = 2.5f;
-	private final float TCYL_HEIGHT_STEP = 0.3f;
+//	private final float TCYL_HEIGHT_STEP = 0.3f;
+	private final float TCYL_HEIGHT_STEP = 0.6f;
 	private float[] tcyl_bars = new float[TCYL_RADIUS_STEPS];
 	private float[] tcyl_bars_vel = new float[TCYL_RADIUS_STEPS];
 	private float[] tcyl_bars_acc = new float[TCYL_RADIUS_STEPS];
@@ -193,7 +218,8 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 	}
 	private final float TCYL_RADIAN_RAND_RATE = 0.0008f;
 	final float TCIN_RADIUS = .2f;
-	final float TCIN_MIN_HEIGHT = 3.8f;
+//	final float TCIN_MIN_HEIGHT = 3.8f;
+	final float TCIN_MIN_HEIGHT = 7f;
 	final float TCIN_MAX_HEIGHT = 7f;
 	private void drawTestCylinder() {
 		if (!cylEnabled) {
@@ -204,18 +230,19 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 			tcyl_bars_vel[i] = Math.max(-.05f, Math.min(.05f, tcyl_bars_vel[i] + tcyl_bars_acc[i]));
 			tcyl_bars[i] += tcyl_bars_vel[i];
 			for(float h = 0; h <= TCYL_HEIGHT - Math.sin(tcyl_bars[0]*2 + TCYL_STEP*i); h+=TCYL_HEIGHT_STEP) {
-				Location particleSpawnLocation = LOCATION.clone();
+				Location particleSpawnLocation = center.clone();
 				double xAdd = Math.sin(tcyl_bars[0] + TCYL_STEP*i) * TCYL_RADIUS;
 				double zAdd = Math.cos(tcyl_bars[0] + TCYL_STEP*i) * TCYL_RADIUS;
 				particleSpawnLocation.add(xAdd, h, zAdd);
 				spawnRedstoneParticle(particleSpawnLocation, .3f, PRIMARY_COL);
 			}
 		}
-		final int TCYL_TOP_RADIUS_STEPS = 20;
+//		final int TCYL_TOP_RADIUS_STEPS = 20;
+		final int TCYL_TOP_RADIUS_STEPS = 10;
 		final float TCYL_TOP_STEP = (float) (2 * Math.PI) / TCYL_TOP_RADIUS_STEPS;
 		for (float i = 0; i < 2 * Math.PI; i+=TCYL_TOP_STEP) {
-			Location particleSpawnLocationTop = LOCATION.clone();
-			Location particleSpawnLocationBottom = LOCATION.clone();
+			Location particleSpawnLocationTop = center.clone();
+			Location particleSpawnLocationBottom = center.clone();
 			double xAdd = Math.sin(i) * TCYL_RADIUS;
 			double zAdd = Math.cos(i) * TCYL_RADIUS;
 			particleSpawnLocationTop.add(xAdd, TCYL_HEIGHT - Math.sin(i + tcyl_bars[0]), zAdd);
@@ -232,7 +259,7 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 		float FRAC_PI = (float) (Math.PI * .25);
 		float randCounter = 0;
 		for(float h = 0; h < TCIN_HEIGHT; h+=TCIN_HEIGHT_STEP) {
-			Location particleSpawnLocation = LOCATION.clone();
+			Location particleSpawnLocation = center.clone();
 			double xAdd = Math.sin(randCounter + RING_d) * TCIN_RADIUS;
 			double zAdd = Math.cos(randCounter + RING_d) * TCIN_RADIUS;
 			particleSpawnLocation.add(xAdd, h, zAdd);
@@ -242,7 +269,7 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 		final int TCIN_TOP_RADIUS_STEPS = 10;
 		final float TCIN_TOP_STEP = (float) (2 * Math.PI) / TCIN_TOP_RADIUS_STEPS;
 		for (float i = 0; i < 2 * Math.PI; i+=TCIN_TOP_STEP) {
-			Location particleSpawnLocationTop = LOCATION.clone();
+			Location particleSpawnLocationTop = center.clone();
 			double xAdd = Math.sin(i) * TCIN_RADIUS;
 			double zAdd = Math.cos(i) * TCIN_RADIUS;
 			particleSpawnLocationTop.add(xAdd, TCIN_HEIGHT, zAdd);
@@ -255,13 +282,13 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 	final int PIN_RATE = 1;
 	private void drawCentralProgressIndicator() {
 		for(double d = 0; d <= PIN_HEIGHT * linearUnitProgress(); d+=PIN_STEP) {
-			spawnRedstoneParticle(LOCATION.clone().add(0, d, 0), 1.5f, Color.WHITE);
+			spawnRedstoneParticle(center.clone().add(0, d, 0), 1f, captured ? PRIMARY_COL : Color.WHITE);
 		}
 	}
 	
 	private final int PASSIVE_SOUND_RATE = 40;
 	private void playPassiveSound() {
-		LOCATION.getWorld().playSound(LOCATION, Sound.BLOCK_BEACON_AMBIENT, .5f, 1);
+		center.getWorld().playSound(center, Sound.BLOCK_BEACON_AMBIENT, .5f, 1);
 	}
 	
 	private void spawnRedstoneParticle(Location particleSpawnLocation, float particleSize, Color color) {
@@ -282,5 +309,5 @@ public class GoalAnimation { /*extends BukkitRunnable implements Listener {
 				1
 				);
 	}
-	*/
+	
 }

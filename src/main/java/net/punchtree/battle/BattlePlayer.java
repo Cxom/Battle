@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 
 import net.punchtree.minigames.region.Area;
 import net.punchtree.minigames.utility.color.ColoredPlayer;
-import net.punchtree.minigames.utility.color.MinigameColor;
+import net.punchtree.util.color.PunchTreeColor;
 
 public class BattlePlayer implements ColoredPlayer {
 
@@ -41,7 +41,7 @@ private final UUID uuid;
 //	}
 
 	@Override
-	public MinigameColor getColor() {
+	public PunchTreeColor getColor() {
 		return team.getColor();
 	}
 	

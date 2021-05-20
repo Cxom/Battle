@@ -6,8 +6,6 @@ import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -17,6 +15,7 @@ import net.punchtree.battle.Battle;
 import net.punchtree.battle.BattleGame;
 import net.punchtree.battle.BattlePlayer;
 import net.punchtree.battle.BattleTeam;
+import net.punchtree.battle.arena.BattleGoal;
 import net.punchtree.minigames.game.pvp.AttackMethod;
 import net.punchtree.minigames.gui.Killfeed;
 
@@ -105,17 +104,31 @@ public class BattleGui {
 		Bukkit.broadcastMessage("Too many left");
 	}
 
-	public void playPostgame(BattleTeam winner, int postgameDurationSeconds) {
+	public void playPostgame(BattleTeam winner, int postgameDurationSeconds) {		
+		Bukkit.broadcastMessage(winner.getChatColor() + "The " + winner.getName() + " team has won!");
 		Bukkit.broadcastMessage("gui::playPostgame ("  + winner.getName() + ")");
 	}
 
 	public void playWaveChange(BattleTeam team) {
 		Bukkit.broadcastMessage("gui::playWaveChange (" + team.getName() + ")");
 		bossbar.setWave(team);
+		// TODO fix.......FIX
+		bossbar.setColor(team.getName().toLowerCase().contains("blue") ? BarColor.BLUE : BarColor.RED);
 	}
 
-	public void playWaveTick(double waveTimerSeconds) {
+	public void playWaveTick(BattleTeam team, double waveTimerSeconds) {
 		bossbar.setSeconds(waveTimerSeconds);
+		float overPerc = overallPercentage(team);
+		bossbar.setPercentageCaptured(overPerc * 100f);
+		bossbar.setProgress(overPerc);
+	}
+	
+	public float overallPercentage(BattleTeam team) {
+		float totalCapture = 0;
+		for (BattleGoal goal : team.goalsToCaptureToWin) {
+			totalCapture += goal.getProgress();
+		}
+		return totalCapture / team.goalsToCaptureToWin.size();
 	}
 	
 }
