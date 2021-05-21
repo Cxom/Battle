@@ -9,6 +9,10 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.md_5.bungee.api.ChatColor;
+import net.punchtree.battle.arena.BattleArena;
+import net.punchtree.battle.arena.BattleArenaLoader;
+import net.punchtree.minigames.arena.creation.ArenaManager;
+import net.punchtree.minigames.game.GameManager;
 
 public class Battle extends JavaPlugin {
 
@@ -17,20 +21,34 @@ public class Battle extends JavaPlugin {
 	private static Plugin plugin;
 	public static Plugin getPlugin() { return plugin; }
 	
-	static File battleArenaFolder;
+	private static File battleArenaFolder;
+	
+	private ArenaManager<BattleArena> battleArenaManager;
+	
+	private GameManager<BattleGame> battleGameManager;
 	
 	@Override
 	public void onEnable() {
 		plugin = this;
 		
 		battleArenaFolder = new File(getDataFolder().getAbsoluteFile() + File.separator + "Arenas");
+		battleArenaManager = new ArenaManager<>(Battle.battleArenaFolder, BattleArenaLoader::load);
+		battleGameManager = new GameManager<>("Battle Games");
 		
-		BattleGameManager.createAllGames();
+		createAllGames();
+	}
+	
+	private void createAllGames() {
+		battleArenaManager.loadArenas();
+		battleArenaManager.getArenas().forEach(battleArena -> {
+			BattleGame game = new BattleGame(battleArena);
+			battleGameManager.addGame(battleArena.getName(), game, game.getLobby());
+		});
 	}
 	
 	@Override
 	public void onDisable() {
-		BattleGameManager.stopAllGames();
+		battleGameManager.stopAllGames();
 	}
 	
 	@Override
@@ -50,15 +68,12 @@ public class Battle extends JavaPlugin {
 		    	player.sendMessage(Battle.BATTLE_CHAT_PREFIX + ChatColor.RED + "You're not in a game!");
 				
 				return true;
-			case "debug":
-				BattleGameManager.debugGamesList(player);
-				return true;
 			}
 			
 			//default just won't return --> opens the /melee menu
 		}
 		
-		BattleGameManager.showMenuTo((Player) sender);
+		battleGameManager.showMenuTo(player);
 		
 		return true;
 	}
