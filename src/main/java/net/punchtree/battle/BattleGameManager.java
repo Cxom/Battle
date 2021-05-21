@@ -43,7 +43,7 @@ public class BattleGameManager {
 	}
 	
 	public static void stopAllGames() {
-		models.values().forEach(BattleGame::stopGame);
+		models.values().forEach(BattleGame::interruptAndShutdown);
 		// This removes a strong reference to the menu
 		// that prevents it from being garbage collected when reloading
 		// why? I have no idea. Probably because static

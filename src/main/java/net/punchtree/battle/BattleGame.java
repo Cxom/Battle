@@ -223,7 +223,7 @@ public class BattleGame implements PvpGame {
 	/**
 	 * Used for *force* stopping a game (not regular game ending by a win)
 	 */
-	public void stopGame() {
+	public void interruptAndShutdown() {
 		gui.playStop();
 		
 		resetGame();
