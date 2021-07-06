@@ -60,14 +60,7 @@ public class Battle extends JavaPlugin {
 		
 		if ( args.length > 0 ) {
 			switch (args[0]) {
-			case "leave":
-				/*
-				 * This is preprocessed in BattleGame in order to determine the game,
-				 * and cancelled if it goes through.
-				 */
-		    	player.sendMessage(Battle.BATTLE_CHAT_PREFIX + ChatColor.RED + "You're not in a game!");
-				
-				return true;
+
 			}
 			
 			//default just won't return --> opens the /melee menu
