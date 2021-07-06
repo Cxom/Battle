@@ -40,7 +40,7 @@ public class BattleGoal {
 	}
 	
 	private Color getSecondaryColor() {
-		java.awt.Color javaColor = color.brighter();
+		java.awt.Color javaColor = color.getJavaColor().brighter();
 		return Color.fromRGB(javaColor.getRed(), javaColor.getBlue(), javaColor.getGreen());
 	}
 	
