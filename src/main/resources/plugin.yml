@@ -1,10 +1,10 @@
 name: Battle
 main: net.punchtree.battle.Battle
-version: 0.0
-api-version: 1.16
+version: 0.2.1
+api-version: 1.19
 author: Cxom
 description: Battle minigame
-depend: [PunchTree-Minigames, MovementPlusPlus]
+depend: [PunchTree-Minigames, MovementPlusPlus, PunchTree-Util]
 
 commands:
     battle:

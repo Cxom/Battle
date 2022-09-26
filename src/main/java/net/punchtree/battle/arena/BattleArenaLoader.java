@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -47,7 +46,8 @@ public class BattleArenaLoader extends ArenaLoader {
 		PunchTreeColor color = getColor(section.getConfigurationSection("color"));
 		if (name == null && color == null) return null;
 		if (name == null) {
-			name = StringUtils.capitalize(color.getChatColor().name());
+			name = color.getChatColor().name().toLowerCase();
+			name = name.substring(0, 1).toUpperCase() + name.substring(1);
 		} else if (color == null) {
 			color = PunchTreeColor.valueOf(name);
 		}

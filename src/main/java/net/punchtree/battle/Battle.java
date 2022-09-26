@@ -5,7 +5,6 @@ import java.io.File;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.md_5.bungee.api.ChatColor;
@@ -13,13 +12,15 @@ import net.punchtree.battle.arena.BattleArena;
 import net.punchtree.battle.arena.BattleArenaLoader;
 import net.punchtree.minigames.arena.creation.ArenaManager;
 import net.punchtree.minigames.game.GameManager;
+import net.punchtree.minigames.lobby.PerMapLegacyLobby;
+import net.punchtree.minigames.utility.player.PlayerProfile;
 
 public class Battle extends JavaPlugin {
 
 	public static final String BATTLE_CHAT_PREFIX = ChatColor.DARK_RED + "[" + ChatColor.RED + "Battle" + ChatColor.DARK_RED + "]" + ChatColor.RESET + " ";
  	
-	private static Plugin plugin;
-	public static Plugin getPlugin() { return plugin; }
+	private static Battle plugin;
+	public static Battle getPlugin() { return plugin; }
 	
 	private static File battleArenaFolder;
 	
@@ -42,7 +43,7 @@ public class Battle extends JavaPlugin {
 		battleArenaManager.loadArenas();
 		battleArenaManager.getArenas().forEach(battleArena -> {
 			BattleGame game = new BattleGame(battleArena);
-			battleGameManager.addGame(battleArena.getName(), game, game.getLobby());
+			battleGameManager.addGame(battleArena.getName(), game, new PerMapLegacyLobby(game, PlayerProfile::restore, Battle.BATTLE_CHAT_PREFIX));
 		});
 	}
 	
@@ -69,6 +70,10 @@ public class Battle extends JavaPlugin {
 		battleGameManager.showMenuTo(player);
 		
 		return true;
+	}
+	
+	public GameManager<BattleGame> getBattleGameManager() {
+		return battleGameManager;
 	}
 	
 }

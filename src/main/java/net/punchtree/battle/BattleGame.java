@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -32,10 +33,8 @@ import net.punchtree.battle.gui.BattleGui;
 import net.punchtree.minigames.arena.Arena;
 import net.punchtree.minigames.game.GameState;
 import net.punchtree.minigames.game.PvpGame;
-import net.punchtree.minigames.lobby.Lobby;
 import net.punchtree.minigames.utility.collections.CirculatingList;
 import net.punchtree.minigames.utility.player.InventoryUtils;
-import net.punchtree.minigames.utility.player.PlayerProfile;
 import net.punchtree.minigames.utility.player.PlayerUtils;
 
 public class BattleGame implements PvpGame {
@@ -45,8 +44,7 @@ public class BattleGame implements PvpGame {
 	private static final int WAVE_LENGTH_SECONDS = 15;
 	private static final int GOAL_TICK_RATE_TICKS = 10;
 	
-	// PErsistent properties
-	private final Lobby lobby;
+	// Persistent properties
 	private final BattleGui gui;
 	private final BattleArena arena;
 	private final MovementSystem movement = MovementPlusPlus.CXOMS_MOVEMENT;
@@ -63,6 +61,8 @@ public class BattleGame implements PvpGame {
 	// State fields
 	private GameState gamestate = GameState.WAITING;
 	
+	private Consumer<Player> onPlayerLeaveGame;
+	
 	private BattleTeam whoseWave = null;
 	private double waveTimer = 0;
 	private BukkitTask waveTask;
@@ -72,7 +72,6 @@ public class BattleGame implements PvpGame {
 	public BattleGame(BattleArena arena) {
 		this.arena = arena;
 		this.gui = new BattleGui(this);
-		this.lobby = new Lobby(this, this::startGame, Battle.BATTLE_CHAT_PREFIX);
 		
 		teams = new CirculatingList<>(arena.teamBases.stream().map(BattleTeam::new).collect(Collectors.toList()), false);
 
@@ -97,7 +96,8 @@ public class BattleGame implements PvpGame {
 		allGoals.addAll(team2.goalsToCaptureToWin);
 	}
 	
-	private void startGame(Set<Player> players) {
+	public void startGame(Set<Player> players, Consumer<Player> onPlayerLeaveGame) {
+		this.onPlayerLeaveGame = onPlayerLeaveGame;
 		
 		List<Player> playersList = new ArrayList<>(players);
 		Collections.shuffle(playersList);
@@ -223,11 +223,11 @@ public class BattleGame implements PvpGame {
 	/**
 	 * Used for *force* stopping a game (not regular game ending by a win)
 	 */
+	@Override
 	public void interruptAndShutdown() {
 		gui.playStop();
 		
 		resetGame();
-		lobby.removeAndRestoreAll();
 		
 		setGameState(GameState.STOPPED);
 	}
@@ -239,12 +239,12 @@ public class BattleGame implements PvpGame {
 		for (BattlePlayer bp : team1.getPlayers()) {
 			Player player = bp.getPlayer();
 			movement.removePlayer(player);
-			PlayerProfile.restore(player);
+			onPlayerLeaveGame.accept(player);
 		}
 		for (BattlePlayer bp : team2.getPlayers()) {
 			Player player = bp.getPlayer();
 			movement.removePlayer(player);
-			PlayerProfile.restore(player);
+			onPlayerLeaveGame.accept(player);
 		}
 		team1.getPlayers().clear();
 		team2.getPlayers().clear();
@@ -287,7 +287,7 @@ public class BattleGame implements PvpGame {
 		bplayer.getTeam().removePlayer(bplayer);
 		gui.removePlayer(player);
 
-		PlayerProfile.restore(player);
+		onPlayerLeaveGame.accept(player);
 
 		// End the game if it gets down to one (team) left.
 		if (bplayer.getTeam().getSize() == 0) {
@@ -297,20 +297,9 @@ public class BattleGame implements PvpGame {
 		return true;
 	}
 	
-	public boolean removePlayerFromLobby(Player player) {
-		if (!lobby.hasPlayer(player)) { return false; }
-		
-		lobby.removeAndRestorePlayer(player);
-		return true;
-	}
-	
 	@Override
 	public String getName() {
 		return "Battle";
-	}
-
-	public Lobby getLobby() {
-		return lobby;
 	}
 
 	@Override
